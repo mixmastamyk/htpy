@@ -18,58 +18,59 @@ if t.TYPE_CHECKING:
 
     from htpy import Node
 
-
-def test_void_element() -> None:
-    element = input(name="foo")
-    assert_type(element, VoidElement)
-    assert isinstance(element, VoidElement)
-
-    result = str(element)
-    assert str(result) == '<input name="foo">'
+    from .types import ToList, ToStr
 
 
-def test_children() -> None:
-    assert str(div[img]) == "<div><img></div>"
+def test_void_element(to_str: ToStr) -> None:
+    result = input(name="foo")
+    assert_type(result, VoidElement)
+    assert isinstance(result, VoidElement)
+
+    assert to_str(result) == '<input name="foo">'
 
 
-def test_integer_child() -> None:
-    assert str(div[123]) == "<div>123</div>"
+def test_integer_child(to_str: ToStr) -> None:
+    assert to_str(div[123]) == "<div>123</div>"
 
 
-def test_multiple_children() -> None:
+def test_children(to_str: ToStr) -> None:
+    assert to_str(div[img]) == "<div><img></div>"
+
+
+def test_multiple_children(to_str: ToStr) -> None:
     result = ul[li, li]
 
-    assert str(result) == "<ul><li></li><li></li></ul>"
+    assert to_str(result) == "<ul><li></li><li></li></ul>"
 
 
-def test_list_children() -> None:
+def test_list_children(to_str: ToStr) -> None:
     children: list[Element] = [li["a"], li["b"]]
     result = ul[children]
-    assert str(result) == "<ul><li>a</li><li>b</li></ul>"
+    assert to_str(result) == "<ul><li>a</li><li>b</li></ul>"
 
 
-def test_tuple_children() -> None:
+def test_tuple_children(to_str: ToStr) -> None:
     result = ul[(li["a"], li["b"])]
-    assert str(result) == "<ul><li>a</li><li>b</li></ul>"
+    assert to_str(result) == "<ul><li>a</li><li>b</li></ul>"
 
 
-def test_flatten_nested_children() -> None:
+def test_flatten_nested_children(to_str: ToStr) -> None:
     result = dl[
         [
             (dt["a"], dd["b"]),
             (dt["c"], dd["d"]),
         ]
     ]
-    assert str(result) == """<dl><dt>a</dt><dd>b</dd><dt>c</dt><dd>d</dd></dl>"""
+    assert to_str(result) == """<dl><dt>a</dt><dd>b</dd><dt>c</dt><dd>d</dd></dl>"""
 
 
-def test_flatten_very_nested_children() -> None:
+def test_flatten_very_nested_children(to_str: ToStr) -> None:
     # maybe not super useful but the nesting may be arbitrarily deep
     result = div[[([["a"]],)], [([["b"]],)]]
-    assert str(result) == """<div>ab</div>"""
+    assert to_str(result) == """<div>ab</div>"""
 
 
-def test_flatten_nested_generators() -> None:
+def test_flatten_nested_generators(to_str: ToStr) -> None:
     def cols() -> Generator[str, None, None]:
         yield "a"
         yield "b"
@@ -82,43 +83,43 @@ def test_flatten_nested_generators() -> None:
 
     result = div[rows()]
 
-    assert str(result) == """<div>abcabcabc</div>"""
+    assert to_str(result) == """<div>abcabcabc</div>"""
 
 
-def test_generator_children() -> None:
+def test_generator_children(to_str: ToStr) -> None:
     gen: Generator[Element, None, None] = (li[x] for x in ["a", "b"])
     result = ul[gen]
-    assert str(result) == "<ul><li>a</li><li>b</li></ul>"
+    assert to_str(result) == "<ul><li>a</li><li>b</li></ul>"
 
 
-def test_html_tag_with_doctype() -> None:
+def test_html_tag_with_doctype(to_str: ToStr) -> None:
     result = html(foo="bar")["hello"]
-    assert str(result) == '<!doctype html><html foo="bar">hello</html>'
+    assert to_str(result) == '<!doctype html><html foo="bar">hello</html>'
 
 
-def test_void_element_children() -> None:
+def test_void_element_children(to_str: ToStr) -> None:
     with pytest.raises(TypeError):
         img["hey"]  # type: ignore[index]
 
 
-def test_call_without_args() -> None:
+def test_call_without_args(to_str: ToStr) -> None:
     result = img()
-    assert str(result) == "<img>"
+    assert to_str(result) == "<img>"
 
 
-def test_custom_element() -> None:
-    el = my_custom_element()
-    assert_type(el, Element)
-    assert isinstance(el, Element)
-    assert str(el) == "<my-custom-element></my-custom-element>"
+def test_custom_element(to_str: ToStr) -> None:
+    result = my_custom_element()
+    assert_type(result, Element)
+    assert isinstance(result, Element)
+    assert to_str(result) == "<my-custom-element></my-custom-element>"
 
 
 @pytest.mark.parametrize("ignored_value", [None, True, False])
-def test_ignored(ignored_value: t.Any) -> None:
-    assert str(div[ignored_value]) == "<div></div>"
+def test_ignored(to_str: ToStr, ignored_value: t.Any) -> None:
+    assert to_str(div[ignored_value]) == "<div></div>"
 
 
-def test_iter() -> None:
+def test_sync_iter() -> None:
     trace = "not started"
 
     def generate_list() -> Generator[Element, None, None]:
@@ -143,8 +144,8 @@ def test_iter() -> None:
     assert trace == "done"
 
 
-def test_iter_str() -> None:
-    _, child, _ = div["a"]
+def test_iter_str(to_list: ToList) -> None:
+    _, child, _ = to_list(div["a"])
 
     assert child == "a"
     # Make sure we dont get Markup (subclass of str)
